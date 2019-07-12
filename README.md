@@ -11,5 +11,9 @@
    - **kallisto.sh**: RNA-Seq raw reads qunatification by kallisto
    - **phylostratr.R**: determine gene phylostratum level and heatmap
    
-   
+ ## supplemental file
+ 
+   - **GOsummary.xlsx**: enriched GO term summary for both SGD dataset and SGD+ORF dataset
+   - **geneInfo_cluster112and317.xlsx**: gene information for two cluster example
+   - **Supplementary Materials_all.pdf**: supplemental material for figures and tables
 
