@@ -14,7 +14,7 @@
    
  ## supplemental file in DataHub
  
-    <https://datahub.io/lijing28101/yeast_supplementary>
+   <https://datahub.io/lijing28101/yeast_supplementary>
  
  - **bidirectional_promoter_pair.csv**:
 A list all ORFs have bidirectional promoter feature as Vakirlis et al., including genomic location and their corresponding SGD annotated genes with correlation.
