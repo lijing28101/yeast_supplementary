@@ -1,13 +1,12 @@
 #!/bin/bash
 
-#author UrMi
-#pipeline to run ribocode on .SRR files
+#author UrMi and Jing
+
 #input directory containing SRR files
 
 #Step 0: Load all required modules, files, prereqs. These are
 # Modules: sra-toolkit, bowtie2, STAR, RiboCode
 # Files: Humangenome.fa corresponding HumanAnnotation.gtf SRR files, rRNA seq database
-# Indexes: STAR index, bowtie2 rRNA index
 
 module load bowtie2/2.3.1-py3-ge4lv4s
 module load kallisto
