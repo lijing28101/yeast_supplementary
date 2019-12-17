@@ -1,86 +1,74 @@
 #!/bin/bash
 
-#author UrMi and Jing
+#./ribo-seq.sh SRRXXXX
 
 #input directory containing SRR files
 
-#Step 0: Load all required modules, files, prereqs. These are
-# Modules: sra-toolkit, bowtie2, STAR, RiboCode
-# Files: Humangenome.fa corresponding HumanAnnotation.gtf SRR files, rRNA seq database
+# Load all required modules, files, prereqs. These are
+# Modules: HISAT2, aspera, samtools
+# ribotricer, bbmap, and sratoolkit 2.9.6 already download
+# Files: yeastgenome.fa, corresponding yeastAnnotation.gtf, SRR files, rRNA seq 
 
-module load bowtie2/2.3.1-py3-ge4lv4s
-module load kallisto
-module load python/3.6.3-u4oaxsb
-module load py-pip/9.0.1-py3-dpds55c
+module load hisat2
+module load aspera
+module load samtools
 
-#copy needed files to scratch for faster access
-rRNAIndex=PATH/TO/rRNAindex
+openssh=/shared/hpc/aspera/cli/3.7.7/etc/asperaweb_id_dsa.openssh
+bbmap_folder=/home/jingli/bbmap/
+bbduk_ref=${bbmap_folder}/resources/adapters.fa
+hisat2_index=/ptmp/LAS/jingli/yeast_ribo/hisat2_index/histat2_index
+rRNA_ref=/ptmp/LAS/jingli/yeast_ribo/rRNA.fa
+bam_out=/ptmp/LAS/jingli/yeast_ribo/bam_out
+ribotricer_index=/ptmp/LAS/jingli/yeast_ribo/yeast_riboindex_candidate_orfs.tsv
+ribo_out=/ptmp/LAS/jingli/yeast_ribo/ribo_out
 
-#Step 1: Convert .SRA files to FASTQ. Use fastq-dump to control quality
-file_dir=$1
-#make list of all SRA files in input directory
-file_list=($file_dir/*.sra)
+#input srr sample ID.
+line=$1
 
-#run this many fastq dump in parallel
-size=10
-i=0
-for f in "${file_list[@]}"; do
-	echo "$f"
-	#run fastqdump
-	this_fname=$(echo "$f" | rev | cut -d"/" -f1 | rev | cut -d"." -f1)
-	echo $this_fname
-	echo "fastq-dump --readids --split-files --dumpbase --skip-technical --clip --read-filter pass --outdir $file_dir $f && rm -f "$f" &"
-	fastq-dump --readids --split-files --dumpbase --skip-technical --clip --read-filter pass --outdir $file_dir $f && rm -f "$f" & 
-	v=$(( $(($i+1)) % $size)) 
-	if [ "$v" -eq "0" ]; then
-  		echo $i
-		echo $v
-		echo "waiting..."
-		wait
-	fi
-	i=$(($i+1))
-done
-echo "finally waiting for fastq-dump to finish..."
-wait
+#Download SRA data
+srr=$(echo "${line::3}" | tr '[:upper:]' '[:lower:]')
+num=$(echo "${line: -1}")
+part=$(echo "${line::6}")
 
-#Step 2: Trimming adapter sequence for Ribo-Seq data
+if [[ $(echo -n $line | wc -m) -eq 10 ]]; then
+  file=$(echo "era-fasp@fasp.sra.ebi.ac.uk:/vol1/${srr}/${part}/00${num}/${line}")
+else
+  file=$(echo "era-fasp@fasp.sra.ebi.ac.uk:/vol1/${srr}/${part}/${line}")
+fi
 
-cutadapt -m 20 --match-read-wildcards -a <Adapter_sequence.fastq> -o <Trimmed.fastq> <Input.fastq>
+ascp -i ${openssh} -P33001 -QT -l 500m ${file} ${line}.sra
 
-########Check if files are RPF not RNA seq############
+if [ $? -ne 0 ]; then
+            echo "FAILED TO DOWNLOAD " "${line}"
+else
+            echo "Download successful " "${line}"
+fi
 
-#Step 3: Remove rRNA reads from FASTQ using bowtie or Sortmerna
-echo "Filtering rRNA using bowtie2"
-
-file_list=$1 #list includes the input files 
-
-#run for all fastq files
-for f in "${file_list[@]}"; do
-	this_fname=$(echo "$f" | rev | cut -d"/" -f1 | rev | cut -d"." -f1)
-	echo $this_fname
-	
-	echo "bowtie2 -p $proc --norc --un "$file_dir/$this_fname"_norRNA.fastq -q $f -x $rRNAIndex -S "$file_dir/$this_fname"_bt2Out.SAM"
-	bowtie2 -p $proc --norc --un "$file_dir/$this_fname"_norRNA.fastq -q $f -x $rRNAIndex -S "$file_dir/$this_fname"_bt2Out.SAM
+#Convert sra to fastq file
+/work/LAS/mash-lab/jing/bin/sratoolkit.2.9.6-1-centos_linux64/bin/fasterq-dump  -f -o ${line}_pass_1.fastq ${line}.sra
 
 
-	if [ $? -ne 0 ]; then
-                fail_flag=true
-                echo "FAILED BOWTIE2 FOR " "$this_fname"
-                echo "$this_fname" >> "$file_dir"/failed_bowtie.log
-                failed_salmon+=("$this_fname")
-                continue
-        fi
-	#remove unwanted files
-	rm -f "$f"
-	rm -f "$file_dir/$this_fname"_bt2Out.SAM									
-done
+#delete adapter sequence
+${bbmap_folder}/bbduk.sh in=${line}.fastq out=${line}_clean.fq ref=${bbduk_ref} ktrim=r k=11 mink=4 hdist=1 qtrim=rl trimq=10
+#Some old samples may use sanger sequencing, then add qin=33
+#${bbmap_folder}/bbduk.sh in=${line}.fastq out=${line}_clean.fq ref=${bbduk_ref} qin=33 ktrim=r k=11 mink=4 hdist=1 qtrim=rl trimq=10
+
+#delete rRNA reads
+${bbmap_folder}/bbsplit.sh in=${line}_clean.fq ref=${rRNA_ref} basename=out_${line}_%.fq outu=${line}_bbspout.fq
 
 
+#alignment by hisat
+#build hisat2 index 
+#hisat2-build Saccharomyces_cerevisiae.R64-1-1.dna_sm.toplevel.fa hisat2_index/histat2_index
 
-#Step 4: quantification by kallisto
+hisat2 --mp 1,1 --no-spliced-alignment --end-to-end --rdg 10000,10000 --rfg 10000,10000 -p 28 -x ${hisat2_index} -U ${line}_bbspout.fq -S ${line}_hisat.sam
 
-#make kallisto index 
-kallisto index -i <index file> --make-unique <transcriptome file>
-#quantification
-kallisto quant -i <index file> --single -l 200 -s 20 -b 100 -o <output folder> <input Ribo-Seq.fastq>
+#convert sam to bam, and delete old sam file
+samtools view -@ 28 -b -o ${line}_hisat.bam ${line}_hisat.sam
+samtools sort -o ${bam_out}/${line}_sorted.bam  -T SRR6234838_temp --threads 28 ${line}_hisat.bam
+rm ${line}_hisat.sam ${line}_hisat.bam
 
+#find translating genes and ORFs
+#build ribotricer index
+# ribotricer prepare-orfs --gtf Saccharomyces_cerevisiae.updated.gtf --fasta Saccharomyces_cerevisiae.R64-1-1.dna_sm.toplevel.fa --prefix yeast_riboindex --min_orf_length 18
+ribotricer detect-orfs --bam ${bam_out}/${line}_sorted.bam --ribotricer_index ${ribotricer_index} --prefix ${ribo_out}/${line} --phase_score_cutoff 0.3 --min_valid_codons 3
