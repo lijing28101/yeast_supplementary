@@ -16,7 +16,10 @@
  
    <https://datahub.io/lijing28101/yeast_supplementary>
  
- - **bidirectional_promoter_pair.csv**:
+ - **Supplementary Materials.pdf**:
+Supplementary figures and tables.
+ 
+ - **divergent_pairs_pair.csv**:
 A list all ORFs have bidirectional promoter feature as Vakirlis et al., including genomic location and their corresponding SGD annotated genes with correlation.
 
  - **geneInfo_cluster112and317.xlsx**:
@@ -28,11 +31,14 @@ Significant GO terms in each cluster.
  - **phylostratr_heatmap.pdf**:
 Gene by gene BLAST result heatmap from phylostratr.
 
- - **ribomeRNA_rawcounts.csv**:
-Raw counts for Ribo-Seq analysis from 346 samples by kallisto.
+ - **RNA-Seq_rawcounts.txt**:
+Raw counts for RNA-Seq analysis from 3,457 samples by kallisto.
 
- - **ribosomeRNA_metadata.xlsx**:
-346 Ribo-Seq metadata download from SRA.
+ - **Ribo-Seq_rawcounts.csv**:
+Raw counts for Ribo-Seq analysis from 302 samples by ribotricer.
+
+ - **Ribo-Seq_metadata.xlsx**:
+306 Ribo-Seq metadata download from SRA.
 
  - **Saccharomyces_cerevisiae.gff**:
 Gene model for Saccharomyces cerevisiae, including unannotated ORFs.
