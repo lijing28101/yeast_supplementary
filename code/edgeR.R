@@ -25,17 +25,4 @@ y <- calcNormFactors(y)
 #calculate cpm, the matrix is after TMM and cpm
 cpm <- cpm(y,normalized.lib.sizes=T)
 logcpm <- log(cpm+1)
-#boxplot
-png(filename="anno_del_normalizaed.png",width=3000,height=1000,type="cairo")
-par(mfrow=c(4,1))
-boxplot(logcpm[1:6692,1:864],outline=F,xaxt="n",range=0.5)
-boxplot(logcpm[1:6692,865:1728],outline=F,xaxt="n",range=0.5)
-boxplot(logcpm[1:6692,1729:2592],outline=F,xaxt="n",range=0.5)
-boxplot(logcpm[1:6692,2593:3457],outline=F,xaxt="n",range=0.5)
-dev.off()
-#expression plot
-cpm <- as.matrix(cpm)
-quantile(cpm,probs = seq(0,1,0.1))
-png(filename="heatmap.png",width=3000,height=1500,type="cairo")
-image(t(cpm2[36046:1,]),col = rev(heat.colors(4)), breaks=c(0.000000001,0.309,2.712,18.030,1.13e7),axes=F, main="Expression level for all CDF (cpm)", cex.main=2)
-dev.off()
+
