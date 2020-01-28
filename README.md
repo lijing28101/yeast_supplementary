@@ -7,7 +7,7 @@
    - **SCnorm.R**: RNA-Seq raw counts normalization by SCnorm
    - **SummaryCluster.R**: random test for GO enrichment analysis and summary for clustering performance
    - **downloadMetadata.R**: RNA-Seq metadata download from SRAdb and GEOdb
-   - **edgeR.R**: RNA-Seq raw counts normalization by edgeR
+   - **edgeR.R**: RNA-Seq raw counts normalization by edgeR and expression plot
    - **kallisto.sh**: RNA-Seq raw reads qunatification by kallisto
    - **phylostratr.R**: determine gene phylostratum level and heatmap
    - **ribo-seq.sh**: Ribo-Seq analysis
